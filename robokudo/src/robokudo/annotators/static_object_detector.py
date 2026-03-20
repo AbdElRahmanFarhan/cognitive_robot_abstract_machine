@@ -2,7 +2,7 @@
 Robokudo Static Object Detector Module
 
 This module provides functionality for detecting objects at predefined locations
-using either manually configured bounding boxes or SDT object knowledge from a database.
+using either manually configured bounding boxes or a world descriptor.
 The detector can create object hypotheses with poses, masks, and class labels.
 
 .. note::
@@ -28,11 +28,11 @@ import robokudo.types.tf
 import robokudo.utils.annotator_helper
 import robokudo.utils.cv_helper
 import robokudo.utils.error_handling
-import robokudo.utils.knowledge
+import robokudo.utils.world_descriptor
 import robokudo.utils.o3d_helper
 import robokudo.utils.type_conversion
 from robokudo.cas import CASViews
-from robokudo.object_knowledge_base import ObjectKnowledge, BaseObjectKnowledgeBase
+from robokudo.world_descriptor import BaseWorldDescriptor
 from robokudo.types.scene import ObjectHypothesis
 from robokudo.utils.transform import get_rotation_matrix_from_euler_angles
 from semantic_digital_twin.world_description.world_entity import Body
@@ -44,7 +44,7 @@ if TYPE_CHECKING:
 
 class StaticObjectMode(Enum):
     BOUNDING_BOX = "bounding_box"
-    OBJECT_KNOWLEDGE_BASE = "object_knowledge_base"
+    WORLD_DESCRIPTOR = "world_descriptor"
 
 
 class StaticObjectDetectorAnnotator(robokudo.annotators.core.BaseAnnotator):
@@ -53,7 +53,7 @@ class StaticObjectDetectorAnnotator(robokudo.annotators.core.BaseAnnotator):
     This annotator can:
 
     * Create object hypotheses at fixed locations using manual bounding box coordinates
-    * Load object knowledge from a database to automatically infer bounding boxes
+    * Load a world descriptor to automatically infer bounding boxes
     * Generate pose annotations in either camera or world coordinates
     * Create masks for the detected regions
 
@@ -92,35 +92,35 @@ class StaticObjectDetectorAnnotator(robokudo.annotators.core.BaseAnnotator):
                 self.class_name: str = "unknown"
                 """
                 Define the class_name which is used for the object of interest
-                Only used for StaticObjectMode.BOUNDING_BOX and StaticObjectMode.OBJECT_KNOWLEDGE_INSTANCE
+                Only used for StaticObjectMode.BOUNDING_BOX
                 """
 
                 self.class_names: List[str] = []
-                """Used for StaticObjectMode.OBJECT_KNOWLEDGE_BASE"""
+                """Used for StaticObjectMode.WORLD_DESCRIPTOR"""
 
                 self.create_pose_annotation: bool = False
                 """If True a Pose will be created for the object. Pose is relative to the camera frame by default.
 
-                Only effective in Mode=StaticObjectDetectorAnnotator.Mode.OBJECT_KNOWLEDGE_*
+                Only effective in Mode=StaticObjectDetectorAnnotator.Mode.WORLD_DESCRIPTOR
                 """
 
                 self.create_bounding_box_annotation: bool = False
                 """If True a BoundingBox will be created for the object.
 
-                Only effective in Mode=StaticObjectDetectorAnnotator.Mode.OBJECT_KNOWLEDGE_*
+                Only effective in Mode=StaticObjectDetectorAnnotator.Mode.WORLD_DESCRIPTOR
                 """
 
                 self.create_mask: bool = True
                 """If this is a true, a mask based on the ROI will be generated that marks every pixel as ON"""
 
-                self.object_knowledge_base_ros_package: str = "robokudo"
-                """If you use SDT object knowledge to generate the detection, provide the knowledge base package name here"""
+                self.world_descriptor_ros_package: str = "robokudo"
+                """If you use a world descriptor to generate the detection, provide the package name here"""
 
-                self.object_knowledge_base_name: str = "object_knowledge_iai_kitchen20"
-                """If you use SDT object knowledge to generate the detection, provide the knowledge base name here"""
+                self.world_descriptor_name: str = "world_iai_kitchen20"
+                """If you use a world descriptor to generate the detection, provide the descriptor name here"""
 
                 self.object_knowledge_instance: Optional[Body] = None
-                """If StaticObjectDetectorAnnotator.Mode.OBJECT_KNOWLEDGE_INSTANCE is used, set the desired instance here"""
+                """Optional direct SDT Body override (reserved for future use)."""
 
         # Overwrite the parameters explicitly to enable auto-completion
         parameters = Parameters()
@@ -141,7 +141,7 @@ class StaticObjectDetectorAnnotator(robokudo.annotators.core.BaseAnnotator):
         self.depth: Optional[npt.NDArray] = None
         self.cloud: Optional[o3d.geometry.PointCloud] = None
         self.cam_intrinsics = None
-        self.object_kb: Optional[BaseObjectKnowledgeBase] = None
+        self.world_descriptor: Optional[BaseWorldDescriptor] = None
         self.object_body: Optional[Body] = None
         self.object_bodies_by_name: Dict[str, Body] = {}
 
@@ -325,7 +325,7 @@ class StaticObjectDetectorAnnotator(robokudo.annotators.core.BaseAnnotator):
         self, world_to_cam_transform_matrix: Optional[npt.NDArray] = None
     ) -> List[ObjectHypothesis]:
         """
-        Detect from a completed object knowledge base
+        Detect from a completed world descriptor
 
         :return: A list of ObjectHypothesis objects
         """
@@ -349,11 +349,11 @@ class StaticObjectDetectorAnnotator(robokudo.annotators.core.BaseAnnotator):
         Steps:
 
         * Gets current color image, depth image and point cloud
-        * If using object knowledge, validates object class exists
+        * If using a world descriptor, validates object class exists
         * Scales color image to match depth image
         * Creates object hypothesis with:
 
-          * Bounding box from configuration or object knowledge
+          * Bounding box from configuration or world descriptor
           * Pose annotation if enabled
           * Point cloud from ROI
           * Mask if enabled
@@ -370,21 +370,23 @@ class StaticObjectDetectorAnnotator(robokudo.annotators.core.BaseAnnotator):
 
         world_frame_required = False
         world_to_cam_transform_matrix = None
-        if self.descriptor.parameters.mode == StaticObjectMode.OBJECT_KNOWLEDGE_BASE:
-            self.object_kb = robokudo.utils.knowledge.load_object_knowledge_base(self)
-            object_bodies = self.object_kb.get_predefined_object_bodies()
+        if self.descriptor.parameters.mode == StaticObjectMode.WORLD_DESCRIPTOR:
+            self.world_descriptor = robokudo.utils.world_descriptor.load_world_descriptor(
+                self
+            )
+            object_bodies = self.world_descriptor.get_predefined_object_bodies()
             self.object_bodies_by_name = {
                 self._body_name(body): body for body in object_bodies
             }
             self.rk_logger.info(
-                f"Loaded KB bodies: {list(self.object_bodies_by_name.keys())}"
+                f"Loaded world descriptor bodies: {list(self.object_bodies_by_name.keys())}"
             )
 
             # Do some sanity checks and quit early if necessary
             for class_name in self.descriptor.parameters.class_names:
                 if class_name not in self.object_bodies_by_name:
                     self.feedback_message = (
-                        f"Couldn't find {class_name} in Object Knowledgebase"
+                        f"Couldn't find {class_name} in world descriptor"
                     )
                     self.rk_logger.warning(self.feedback_message)
                     return py_trees.common.Status.SUCCESS
@@ -424,7 +426,7 @@ class StaticObjectDetectorAnnotator(robokudo.annotators.core.BaseAnnotator):
             if object_hypothesis is None:
                 return py_trees.common.Status.SUCCESS
             object_hypotheses.append(object_hypothesis)
-        elif self.descriptor.parameters.mode == StaticObjectMode.OBJECT_KNOWLEDGE_BASE:
+        elif self.descriptor.parameters.mode == StaticObjectMode.WORLD_DESCRIPTOR:
             object_hypotheses = self.detect_from_body_base(
                 world_to_cam_transform_matrix=world_to_cam_transform_matrix
             )

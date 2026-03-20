@@ -1,37 +1,24 @@
-from dataclasses import dataclass, field
-
-raise RuntimeError(
-    "Object knowledge descriptors are deprecated. Use descriptors/worlds instead."
-)
 from pathlib import Path
-from typing import Optional
 
-from robokudo.object_knowledge_base import (
-    BaseObjectKnowledgeBase,
-    ObjectKnowledge,
-    PredefinedObject, RegionSpec,
-)
-from semantic_digital_twin.datastructures.prefixed_name import PrefixedName
-from robokudo.object_knowledge_base import BaseObjectKnowledgeBase, ObjectSpec
+from robokudo.world_descriptor import BaseWorldDescriptor, ObjectSpec, RegionSpec
 from semantic_digital_twin.spatial_types import HomogeneousTransformationMatrix
-from semantic_digital_twin.world_description.geometry import Color, Scale
+from semantic_digital_twin.world_description.geometry import Scale
 
 
-@dataclass
-class ObjectKnowledgeBase(BaseObjectKnowledgeBase):
+class WorldDescriptor(BaseWorldDescriptor):
     def __init__(self) -> None:
         super().__init__()
         root = self.world.root
 
         milk_path = (
-                Path(__file__).resolve().parents[5]
-                / "semantic_digital_twin"
-                / "resources"
-                / "stl"
-                / "milk.stl"
+            Path(__file__).resolve().parents[5]
+            / "semantic_digital_twin"
+            / "resources"
+            / "stl"
+            / "milk.stl"
         )
 
-        specs = [
+        object_specs = [
             ObjectSpec(
                 name="cereal",
                 box_scale=Scale(0.20, 0.20, 0.20),
@@ -48,8 +35,6 @@ class ObjectKnowledgeBase(BaseObjectKnowledgeBase):
             ),
         ]
 
-        self.build_objects(root, specs)
-
         region_specs = [RegionSpec(
             name="kitchen_island",
             box_scale=Scale(1.0, 2.5, 0.85),
@@ -57,4 +42,6 @@ class ObjectKnowledgeBase(BaseObjectKnowledgeBase):
                 x=-1.10, y=1.7, z=1.20, reference_frame=root
             ),
         )]
+
+        self.build_objects(root, object_specs)
         self.build_regions(root, region_specs)
