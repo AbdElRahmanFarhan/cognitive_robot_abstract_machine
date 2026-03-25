@@ -25,20 +25,10 @@ from py_trees.common import Status
 from typing_extensions import List, TYPE_CHECKING
 
 from robokudo.annotators.core import ThreadedAnnotator, BaseAnnotator
-from robokudo.semantic_map import SemanticMapEntry
 from robokudo.types.annotation import LocationAnnotation
 from robokudo.types.scene import ObjectHypothesis
 from robokudo.utils.annotator_helper import get_world_to_cam_transform_matrix
 from robokudo.utils.error_handling import catch_and_raise_to_blackboard
-from robokudo.utils.module_loader import ModuleLoader
-from robokudo.utils.semantic_map import (
-    get_obb_from_semantic_map_region_in_cam_coordinates,
-)
-import robokudo.types
-import robokudo.types.annotation
-import robokudo.types.scene
-import robokudo.utils.annotator_helper
-import robokudo.utils.error_handling
 import robokudo.utils.world_descriptor
 from robokudo.utils.region import region_obb_in_cam_coordinates
 from semantic_digital_twin.world_description.world_entity import Region
