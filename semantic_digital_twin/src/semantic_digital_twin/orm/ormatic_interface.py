@@ -466,110 +466,14 @@ class CupDAO_simulator_additional_properties_association(
     )
 
 
-class CandyDAO_simulator_additional_properties_association(
+class FoodDAO_simulator_additional_properties_association(
     Base, AssociationDataAccessObject
 ):
 
-    __tablename__ = "_44654600584543749517370415634793872903696284352263500424425772"
+    __tablename__ = "_49431756147894698860930789693074256277242210998660402025316494"
 
     database_id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    source_candydao_id: Mapped[int] = mapped_column(ForeignKey("CandyDAO.database_id"))
-    target_simulatoradditionalpropertydao_id: Mapped[int] = mapped_column(
-        ForeignKey("SimulatorAdditionalPropertyDAO.database_id")
-    )
-
-    target: Mapped[SimulatorAdditionalPropertyDAO] = relationship(
-        "SimulatorAdditionalPropertyDAO",
-        foreign_keys=[target_simulatoradditionalpropertydao_id],
-    )
-
-
-class CerealDAO_simulator_additional_properties_association(
-    Base, AssociationDataAccessObject
-):
-
-    __tablename__ = "_11523097515769791974719003335946653692580152722782838684463849"
-
-    database_id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    source_cerealdao_id: Mapped[int] = mapped_column(
-        ForeignKey("CerealDAO.database_id")
-    )
-    target_simulatoradditionalpropertydao_id: Mapped[int] = mapped_column(
-        ForeignKey("SimulatorAdditionalPropertyDAO.database_id")
-    )
-
-    target: Mapped[SimulatorAdditionalPropertyDAO] = relationship(
-        "SimulatorAdditionalPropertyDAO",
-        foreign_keys=[target_simulatoradditionalpropertydao_id],
-    )
-
-
-class MilkDAO_simulator_additional_properties_association(
-    Base, AssociationDataAccessObject
-):
-
-    __tablename__ = "_73989504949167229252703969583798403933932852329246509310895947"
-
-    database_id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    source_milkdao_id: Mapped[int] = mapped_column(ForeignKey("MilkDAO.database_id"))
-    target_simulatoradditionalpropertydao_id: Mapped[int] = mapped_column(
-        ForeignKey("SimulatorAdditionalPropertyDAO.database_id")
-    )
-
-    target: Mapped[SimulatorAdditionalPropertyDAO] = relationship(
-        "SimulatorAdditionalPropertyDAO",
-        foreign_keys=[target_simulatoradditionalpropertydao_id],
-    )
-
-
-class NoodlesDAO_simulator_additional_properties_association(
-    Base, AssociationDataAccessObject
-):
-
-    __tablename__ = "_97956905545593601094528308941859204247133166078692522178071007"
-
-    database_id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    source_noodlesdao_id: Mapped[int] = mapped_column(
-        ForeignKey("NoodlesDAO.database_id")
-    )
-    target_simulatoradditionalpropertydao_id: Mapped[int] = mapped_column(
-        ForeignKey("SimulatorAdditionalPropertyDAO.database_id")
-    )
-
-    target: Mapped[SimulatorAdditionalPropertyDAO] = relationship(
-        "SimulatorAdditionalPropertyDAO",
-        foreign_keys=[target_simulatoradditionalpropertydao_id],
-    )
-
-
-class OrangeDAO_simulator_additional_properties_association(
-    Base, AssociationDataAccessObject
-):
-
-    __tablename__ = "_79506844994182685914422192853936496116603011014157324205597527"
-
-    database_id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    source_orangedao_id: Mapped[int] = mapped_column(
-        ForeignKey("OrangeDAO.database_id")
-    )
-    target_simulatoradditionalpropertydao_id: Mapped[int] = mapped_column(
-        ForeignKey("SimulatorAdditionalPropertyDAO.database_id")
-    )
-
-    target: Mapped[SimulatorAdditionalPropertyDAO] = relationship(
-        "SimulatorAdditionalPropertyDAO",
-        foreign_keys=[target_simulatoradditionalpropertydao_id],
-    )
-
-
-class SaltDAO_simulator_additional_properties_association(
-    Base, AssociationDataAccessObject
-):
-
-    __tablename__ = "_89525628732170092230399393825922728910958860879365658302236022"
-
-    database_id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    source_saltdao_id: Mapped[int] = mapped_column(ForeignKey("SaltDAO.database_id"))
+    source_fooddao_id: Mapped[int] = mapped_column(ForeignKey("FoodDAO.database_id"))
     target_simulatoradditionalpropertydao_id: Mapped[int] = mapped_column(
         ForeignKey("SimulatorAdditionalPropertyDAO.database_id")
     )
@@ -789,26 +693,6 @@ class DishwasherDAO_objects_association(Base, AssociationDataAccessObject):
 
     target: Mapped[HasRootBodyDAO] = relationship(
         "HasRootBodyDAO", foreign_keys=[target_hasrootbodydao_id]
-    )
-
-
-class SaltContainerDAO_simulator_additional_properties_association(
-    Base, AssociationDataAccessObject
-):
-
-    __tablename__ = "_84348546706356532236307921214508794097068231055379165410601753"
-
-    database_id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    source_saltcontainerdao_id: Mapped[int] = mapped_column(
-        ForeignKey("SaltContainerDAO.database_id")
-    )
-    target_simulatoradditionalpropertydao_id: Mapped[int] = mapped_column(
-        ForeignKey("SimulatorAdditionalPropertyDAO.database_id")
-    )
-
-    target: Mapped[SimulatorAdditionalPropertyDAO] = relationship(
-        "SimulatorAdditionalPropertyDAO",
-        foreign_keys=[target_simulatoradditionalpropertydao_id],
     )
 
 
@@ -4258,7 +4142,7 @@ class DroneDAO(
 
 
 class FoodDAO(
-    HasRootBodyDAO,
+    IsPerceivableDAO,
     DataAccessObject[
         semantic_digital_twin.semantic_annotations.semantic_annotations.Food
     ],
@@ -4267,14 +4151,44 @@ class FoodDAO(
     __tablename__ = "FoodDAO"
 
     database_id: Mapped[builtins.int] = mapped_column(
-        ForeignKey(HasRootBodyDAO.database_id),
+        ForeignKey(IsPerceivableDAO.database_id),
         primary_key=True,
         use_existing_column=True,
     )
 
+    id: Mapped[uuid.UUID] = mapped_column(
+        sqlalchemy.sql.sqltypes.UUID, nullable=False, use_existing_column=True
+    )
+
+    name_id: Mapped[int] = mapped_column(
+        ForeignKey("PrefixedNameDAO.database_id", use_alter=True),
+        nullable=True,
+        use_existing_column=True,
+    )
+    root_id: Mapped[int] = mapped_column(
+        ForeignKey("BodyDAO.database_id", use_alter=True),
+        nullable=True,
+        use_existing_column=True,
+    )
+
+    simulator_additional_properties: Mapped[
+        builtins.list[FoodDAO_simulator_additional_properties_association]
+    ] = relationship(
+        "FoodDAO_simulator_additional_properties_association",
+        collection_class=builtins.list,
+        cascade="all, delete-orphan",
+        foreign_keys="[FoodDAO_simulator_additional_properties_association.source_fooddao_id]",
+    )
+    name: Mapped[PrefixedNameDAO] = relationship(
+        "PrefixedNameDAO", uselist=False, foreign_keys=[name_id], post_update=True
+    )
+    root: Mapped[BodyDAO] = relationship(
+        "BodyDAO", uselist=False, foreign_keys=[root_id], post_update=True
+    )
+
     __mapper_args__ = {
         "polymorphic_identity": "FoodDAO",
-        "inherit_condition": database_id == HasRootBodyDAO.database_id,
+        "inherit_condition": database_id == IsPerceivableDAO.database_id,
     }
 
 
@@ -4298,7 +4212,7 @@ class BreadDAO(
 
 
 class CandyDAO(
-    IsPerceivableDAO,
+    FoodDAO,
     DataAccessObject[
         semantic_digital_twin.semantic_annotations.semantic_annotations.Candy
     ],
@@ -4307,49 +4221,17 @@ class CandyDAO(
     __tablename__ = "CandyDAO"
 
     database_id: Mapped[builtins.int] = mapped_column(
-        ForeignKey(IsPerceivableDAO.database_id),
-        primary_key=True,
-        use_existing_column=True,
-    )
-
-    id: Mapped[uuid.UUID] = mapped_column(
-        sqlalchemy.sql.sqltypes.UUID, nullable=False, use_existing_column=True
-    )
-
-    name_id: Mapped[int] = mapped_column(
-        ForeignKey("PrefixedNameDAO.database_id", use_alter=True),
-        nullable=True,
-        use_existing_column=True,
-    )
-    root_id: Mapped[int] = mapped_column(
-        ForeignKey("BodyDAO.database_id", use_alter=True),
-        nullable=True,
-        use_existing_column=True,
-    )
-
-    simulator_additional_properties: Mapped[
-        builtins.list[CandyDAO_simulator_additional_properties_association]
-    ] = relationship(
-        "CandyDAO_simulator_additional_properties_association",
-        collection_class=builtins.list,
-        cascade="all, delete-orphan",
-        foreign_keys="[CandyDAO_simulator_additional_properties_association.source_candydao_id]",
-    )
-    name: Mapped[PrefixedNameDAO] = relationship(
-        "PrefixedNameDAO", uselist=False, foreign_keys=[name_id], post_update=True
-    )
-    root: Mapped[BodyDAO] = relationship(
-        "BodyDAO", uselist=False, foreign_keys=[root_id], post_update=True
+        ForeignKey(FoodDAO.database_id), primary_key=True, use_existing_column=True
     )
 
     __mapper_args__ = {
         "polymorphic_identity": "CandyDAO",
-        "inherit_condition": database_id == IsPerceivableDAO.database_id,
+        "inherit_condition": database_id == FoodDAO.database_id,
     }
 
 
 class CerealDAO(
-    IsPerceivableDAO,
+    FoodDAO,
     DataAccessObject[
         semantic_digital_twin.semantic_annotations.semantic_annotations.Cereal
     ],
@@ -4358,44 +4240,12 @@ class CerealDAO(
     __tablename__ = "CerealDAO"
 
     database_id: Mapped[builtins.int] = mapped_column(
-        ForeignKey(IsPerceivableDAO.database_id),
-        primary_key=True,
-        use_existing_column=True,
-    )
-
-    id: Mapped[uuid.UUID] = mapped_column(
-        sqlalchemy.sql.sqltypes.UUID, nullable=False, use_existing_column=True
-    )
-
-    name_id: Mapped[int] = mapped_column(
-        ForeignKey("PrefixedNameDAO.database_id", use_alter=True),
-        nullable=True,
-        use_existing_column=True,
-    )
-    root_id: Mapped[int] = mapped_column(
-        ForeignKey("BodyDAO.database_id", use_alter=True),
-        nullable=True,
-        use_existing_column=True,
-    )
-
-    simulator_additional_properties: Mapped[
-        builtins.list[CerealDAO_simulator_additional_properties_association]
-    ] = relationship(
-        "CerealDAO_simulator_additional_properties_association",
-        collection_class=builtins.list,
-        cascade="all, delete-orphan",
-        foreign_keys="[CerealDAO_simulator_additional_properties_association.source_cerealdao_id]",
-    )
-    name: Mapped[PrefixedNameDAO] = relationship(
-        "PrefixedNameDAO", uselist=False, foreign_keys=[name_id], post_update=True
-    )
-    root: Mapped[BodyDAO] = relationship(
-        "BodyDAO", uselist=False, foreign_keys=[root_id], post_update=True
+        ForeignKey(FoodDAO.database_id), primary_key=True, use_existing_column=True
     )
 
     __mapper_args__ = {
         "polymorphic_identity": "CerealDAO",
-        "inherit_condition": database_id == IsPerceivableDAO.database_id,
+        "inherit_condition": database_id == FoodDAO.database_id,
     }
 
 
@@ -4438,7 +4288,7 @@ class GelatinBoxDAO(
 
 
 class MilkDAO(
-    IsPerceivableDAO,
+    FoodDAO,
     DataAccessObject[
         semantic_digital_twin.semantic_annotations.semantic_annotations.Milk
     ],
@@ -4447,49 +4297,17 @@ class MilkDAO(
     __tablename__ = "MilkDAO"
 
     database_id: Mapped[builtins.int] = mapped_column(
-        ForeignKey(IsPerceivableDAO.database_id),
-        primary_key=True,
-        use_existing_column=True,
-    )
-
-    id: Mapped[uuid.UUID] = mapped_column(
-        sqlalchemy.sql.sqltypes.UUID, nullable=False, use_existing_column=True
-    )
-
-    name_id: Mapped[int] = mapped_column(
-        ForeignKey("PrefixedNameDAO.database_id", use_alter=True),
-        nullable=True,
-        use_existing_column=True,
-    )
-    root_id: Mapped[int] = mapped_column(
-        ForeignKey("BodyDAO.database_id", use_alter=True),
-        nullable=True,
-        use_existing_column=True,
-    )
-
-    simulator_additional_properties: Mapped[
-        builtins.list[MilkDAO_simulator_additional_properties_association]
-    ] = relationship(
-        "MilkDAO_simulator_additional_properties_association",
-        collection_class=builtins.list,
-        cascade="all, delete-orphan",
-        foreign_keys="[MilkDAO_simulator_additional_properties_association.source_milkdao_id]",
-    )
-    name: Mapped[PrefixedNameDAO] = relationship(
-        "PrefixedNameDAO", uselist=False, foreign_keys=[name_id], post_update=True
-    )
-    root: Mapped[BodyDAO] = relationship(
-        "BodyDAO", uselist=False, foreign_keys=[root_id], post_update=True
+        ForeignKey(FoodDAO.database_id), primary_key=True, use_existing_column=True
     )
 
     __mapper_args__ = {
         "polymorphic_identity": "MilkDAO",
-        "inherit_condition": database_id == IsPerceivableDAO.database_id,
+        "inherit_condition": database_id == FoodDAO.database_id,
     }
 
 
 class NoodlesDAO(
-    IsPerceivableDAO,
+    FoodDAO,
     DataAccessObject[
         semantic_digital_twin.semantic_annotations.semantic_annotations.Noodles
     ],
@@ -4498,44 +4316,12 @@ class NoodlesDAO(
     __tablename__ = "NoodlesDAO"
 
     database_id: Mapped[builtins.int] = mapped_column(
-        ForeignKey(IsPerceivableDAO.database_id),
-        primary_key=True,
-        use_existing_column=True,
-    )
-
-    id: Mapped[uuid.UUID] = mapped_column(
-        sqlalchemy.sql.sqltypes.UUID, nullable=False, use_existing_column=True
-    )
-
-    name_id: Mapped[int] = mapped_column(
-        ForeignKey("PrefixedNameDAO.database_id", use_alter=True),
-        nullable=True,
-        use_existing_column=True,
-    )
-    root_id: Mapped[int] = mapped_column(
-        ForeignKey("BodyDAO.database_id", use_alter=True),
-        nullable=True,
-        use_existing_column=True,
-    )
-
-    simulator_additional_properties: Mapped[
-        builtins.list[NoodlesDAO_simulator_additional_properties_association]
-    ] = relationship(
-        "NoodlesDAO_simulator_additional_properties_association",
-        collection_class=builtins.list,
-        cascade="all, delete-orphan",
-        foreign_keys="[NoodlesDAO_simulator_additional_properties_association.source_noodlesdao_id]",
-    )
-    name: Mapped[PrefixedNameDAO] = relationship(
-        "PrefixedNameDAO", uselist=False, foreign_keys=[name_id], post_update=True
-    )
-    root: Mapped[BodyDAO] = relationship(
-        "BodyDAO", uselist=False, foreign_keys=[root_id], post_update=True
+        ForeignKey(FoodDAO.database_id), primary_key=True, use_existing_column=True
     )
 
     __mapper_args__ = {
         "polymorphic_identity": "NoodlesDAO",
-        "inherit_condition": database_id == IsPerceivableDAO.database_id,
+        "inherit_condition": database_id == FoodDAO.database_id,
     }
 
 
@@ -4635,7 +4421,7 @@ class BananaDAO(
 
 
 class OrangeDAO(
-    IsPerceivableDAO,
+    FruitDAO,
     DataAccessObject[
         semantic_digital_twin.semantic_annotations.semantic_annotations.Orange
     ],
@@ -4644,44 +4430,12 @@ class OrangeDAO(
     __tablename__ = "OrangeDAO"
 
     database_id: Mapped[builtins.int] = mapped_column(
-        ForeignKey(IsPerceivableDAO.database_id),
-        primary_key=True,
-        use_existing_column=True,
-    )
-
-    id: Mapped[uuid.UUID] = mapped_column(
-        sqlalchemy.sql.sqltypes.UUID, nullable=False, use_existing_column=True
-    )
-
-    name_id: Mapped[int] = mapped_column(
-        ForeignKey("PrefixedNameDAO.database_id", use_alter=True),
-        nullable=True,
-        use_existing_column=True,
-    )
-    root_id: Mapped[int] = mapped_column(
-        ForeignKey("BodyDAO.database_id", use_alter=True),
-        nullable=True,
-        use_existing_column=True,
-    )
-
-    simulator_additional_properties: Mapped[
-        builtins.list[OrangeDAO_simulator_additional_properties_association]
-    ] = relationship(
-        "OrangeDAO_simulator_additional_properties_association",
-        collection_class=builtins.list,
-        cascade="all, delete-orphan",
-        foreign_keys="[OrangeDAO_simulator_additional_properties_association.source_orangedao_id]",
-    )
-    name: Mapped[PrefixedNameDAO] = relationship(
-        "PrefixedNameDAO", uselist=False, foreign_keys=[name_id], post_update=True
-    )
-    root: Mapped[BodyDAO] = relationship(
-        "BodyDAO", uselist=False, foreign_keys=[root_id], post_update=True
+        ForeignKey(FruitDAO.database_id), primary_key=True, use_existing_column=True
     )
 
     __mapper_args__ = {
         "polymorphic_identity": "OrangeDAO",
-        "inherit_condition": database_id == IsPerceivableDAO.database_id,
+        "inherit_condition": database_id == FruitDAO.database_id,
     }
 
 
@@ -4781,7 +4535,7 @@ class TomatoDAO(
 
 
 class SaltDAO(
-    IsPerceivableDAO,
+    FoodDAO,
     DataAccessObject[
         semantic_digital_twin.semantic_annotations.semantic_annotations.Salt
     ],
@@ -4790,44 +4544,12 @@ class SaltDAO(
     __tablename__ = "SaltDAO"
 
     database_id: Mapped[builtins.int] = mapped_column(
-        ForeignKey(IsPerceivableDAO.database_id),
-        primary_key=True,
-        use_existing_column=True,
-    )
-
-    id: Mapped[uuid.UUID] = mapped_column(
-        sqlalchemy.sql.sqltypes.UUID, nullable=False, use_existing_column=True
-    )
-
-    name_id: Mapped[int] = mapped_column(
-        ForeignKey("PrefixedNameDAO.database_id", use_alter=True),
-        nullable=True,
-        use_existing_column=True,
-    )
-    root_id: Mapped[int] = mapped_column(
-        ForeignKey("BodyDAO.database_id", use_alter=True),
-        nullable=True,
-        use_existing_column=True,
-    )
-
-    simulator_additional_properties: Mapped[
-        builtins.list[SaltDAO_simulator_additional_properties_association]
-    ] = relationship(
-        "SaltDAO_simulator_additional_properties_association",
-        collection_class=builtins.list,
-        cascade="all, delete-orphan",
-        foreign_keys="[SaltDAO_simulator_additional_properties_association.source_saltdao_id]",
-    )
-    name: Mapped[PrefixedNameDAO] = relationship(
-        "PrefixedNameDAO", uselist=False, foreign_keys=[name_id], post_update=True
-    )
-    root: Mapped[BodyDAO] = relationship(
-        "BodyDAO", uselist=False, foreign_keys=[root_id], post_update=True
+        ForeignKey(FoodDAO.database_id), primary_key=True, use_existing_column=True
     )
 
     __mapper_args__ = {
         "polymorphic_identity": "SaltDAO",
-        "inherit_condition": database_id == IsPerceivableDAO.database_id,
+        "inherit_condition": database_id == FoodDAO.database_id,
     }
 
 
@@ -5185,14 +4907,14 @@ class BowlDAO(
     }
 
 
-class Counter_TopDAO(
+class CounterTopDAO(
     HasSupportingSurfaceDAO,
     DataAccessObject[
-        semantic_digital_twin.semantic_annotations.semantic_annotations.Counter_Top
+        semantic_digital_twin.semantic_annotations.semantic_annotations.CounterTop
     ],
 ):
 
-    __tablename__ = "Counter_TopDAO"
+    __tablename__ = "CounterTopDAO"
 
     database_id: Mapped[builtins.int] = mapped_column(
         ForeignKey(HasSupportingSurfaceDAO.database_id),
@@ -5201,7 +4923,7 @@ class Counter_TopDAO(
     )
 
     __mapper_args__ = {
-        "polymorphic_identity": "Counter_TopDAO",
+        "polymorphic_identity": "CounterTopDAO",
         "inherit_condition": database_id == HasSupportingSurfaceDAO.database_id,
     }
 
@@ -5833,7 +5555,7 @@ class ProcthorBoxDAO(
 
 
 class SaltContainerDAO(
-    IsPerceivableDAO,
+    HasRootBodyDAO,
     DataAccessObject[
         semantic_digital_twin.semantic_annotations.semantic_annotations.SaltContainer
     ],
@@ -5842,44 +5564,14 @@ class SaltContainerDAO(
     __tablename__ = "SaltContainerDAO"
 
     database_id: Mapped[builtins.int] = mapped_column(
-        ForeignKey(IsPerceivableDAO.database_id),
+        ForeignKey(HasRootBodyDAO.database_id),
         primary_key=True,
         use_existing_column=True,
     )
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        sqlalchemy.sql.sqltypes.UUID, nullable=False, use_existing_column=True
-    )
-
-    name_id: Mapped[int] = mapped_column(
-        ForeignKey("PrefixedNameDAO.database_id", use_alter=True),
-        nullable=True,
-        use_existing_column=True,
-    )
-    root_id: Mapped[int] = mapped_column(
-        ForeignKey("BodyDAO.database_id", use_alter=True),
-        nullable=True,
-        use_existing_column=True,
-    )
-
-    simulator_additional_properties: Mapped[
-        builtins.list[SaltContainerDAO_simulator_additional_properties_association]
-    ] = relationship(
-        "SaltContainerDAO_simulator_additional_properties_association",
-        collection_class=builtins.list,
-        cascade="all, delete-orphan",
-        foreign_keys="[SaltContainerDAO_simulator_additional_properties_association.source_saltcontainerdao_id]",
-    )
-    name: Mapped[PrefixedNameDAO] = relationship(
-        "PrefixedNameDAO", uselist=False, foreign_keys=[name_id], post_update=True
-    )
-    root: Mapped[BodyDAO] = relationship(
-        "BodyDAO", uselist=False, foreign_keys=[root_id], post_update=True
-    )
-
     __mapper_args__ = {
         "polymorphic_identity": "SaltContainerDAO",
-        "inherit_condition": database_id == IsPerceivableDAO.database_id,
+        "inherit_condition": database_id == HasRootBodyDAO.database_id,
     }
 
 
