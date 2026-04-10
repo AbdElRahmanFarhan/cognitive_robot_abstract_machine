@@ -65,3 +65,6 @@ jobs:
       - name: Run Tests 🎓
         run: |
           pytest ../test/random_events_test
+
+  test_random_events_lib:
+    uses: ./.github/workflows/random_events/test_random_events_lib.yml

@@ -1,4 +1,4 @@
-#include <gtest/gtest.h>
+#include "gtest/gtest.h"
 #include "product_algebra.h"
 #include "interval.h"
 #include "set.h"
