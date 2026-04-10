@@ -8,7 +8,7 @@ import numpy as np
 import trimesh
 from krrood.entity_query_language.factories import variable_from, entity, variable, an
 from polytope import bounding_box
-from probabilistic_model.distributions.helper import make_dirac
+from probabilistic_model.distributions.gaussian import GaussianDistribution
 from random_events.product_algebra import Event
 from random_events.set import Set
 from random_events.variable import Symbolic
@@ -23,7 +23,6 @@ from typing_extensions import (
 )
 
 from krrood.ormatic.utils import classproperty
-from probabilistic_model.distributions import GaussianDistribution
 from probabilistic_model.distributions.helper import make_dirac
 from probabilistic_model.probabilistic_circuit.rx.helper import (
     uniform_measure_of_event,
@@ -445,6 +444,7 @@ class HasApertures(HasRootBody, ABC):
 
         :param aperture: The aperture whose geometry should be removed.
         """
+
         world = self._world
         world.update_forward_kinematics()
         hole_event = aperture.root.area.as_bounding_box_collection_in_frame(
@@ -457,6 +457,7 @@ class HasApertures(HasRootBody, ABC):
         new_bounding_box_collection = BoundingBoxCollection.from_event(
             self.root, new_wall_event
         ).as_shapes()
+
         self.root.collision = new_bounding_box_collection
         self.root.visual = new_bounding_box_collection
 
@@ -904,7 +905,7 @@ class HasSupportingSurface(HasStorageSpace, ABC):
         surface_circuit_root = SumUnit(probabilistic_circuit=surface_circuit)
 
         objects_of_interest_variable = Symbolic(
-            "objects_of_interest", Set.from_iterable(objects_of_interest)
+            name="objects_of_interest", domain=Set.from_iterable(objects_of_interest)
         )
 
         for object_of_interest in objects_of_interest:
@@ -920,14 +921,14 @@ class HasSupportingSurface(HasStorageSpace, ABC):
             )
 
             x_p = GaussianDistribution(
-                SpatialVariables.x.value,
-                float(surface_P_obj.x),
-                variance,
+                variable=SpatialVariables.x.value,
+                location=float(surface_P_obj.x),
+                scale=variance,
             )
             y_p = GaussianDistribution(
-                SpatialVariables.y.value,
-                float(surface_P_obj.y),
-                variance,
+                variable=SpatialVariables.y.value,
+                location=float(surface_P_obj.y),
+                scale=variance,
             )
 
             p_object_root.add_subcircuit(leaf(object_of_interest_p, surface_circuit))
