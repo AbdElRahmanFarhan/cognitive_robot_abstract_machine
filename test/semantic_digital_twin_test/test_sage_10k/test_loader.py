@@ -37,8 +37,8 @@ def verify_scene(world: World, scene: Sage10kScene):
             assert np.isclose(global_position.y, obj.position.y)
             assert np.isclose(global_position.z, obj.position.z)
 
-@pytest.fixture
-def sage10k_scene():
+
+def get_sage10k_scene():
     try:
         loader = Sage10kDatasetLoader()
         return loader.create_scene(scene_url=Sage10kDatasetLoader.available_scenes()[0])
@@ -46,6 +46,12 @@ def sage10k_scene():
         return None
 
 
+@pytest.fixture
+def sage10k_scene():
+    return get_sage10k_scene()
+
+
+@pytest.mark.skipif(get_sage10k_scene() is None, reason="Sage10k dataset not available")
 def test_loader(rclpy_node, sage10k_scene):
     scene = sage10k_scene
     if scene is None:
@@ -58,7 +64,7 @@ def test_loader(rclpy_node, sage10k_scene):
     pub.with_tf_publisher()
     verify_scene(world, scene)
 
-
+@pytest.mark.skipif(get_sage10k_scene() is None, reason="Sage10k dataset not available")
 def test_different_decomposition_methods(
     rclpy_node, sage10k_scene
 ):
