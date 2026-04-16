@@ -18,7 +18,11 @@ apt install -y \
     graphviz-dev \
     ros-jazzy-rclpy-message-converter \
     pip \
-    python3-colcon-common-extensions
+    python3-colcon-common-extensions \
+    ros-jazzy-compressed-image-transport \
+    ros-jazzy-image-transport \
+    ros-jazzy-image-transport-plugins \
+    git-lfs
 
 # ── ROS 2 workspace – robot description packages ──────────────────────────────
 mkdir -p "$OVERLAY_WS/src"
