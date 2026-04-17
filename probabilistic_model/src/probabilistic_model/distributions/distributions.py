@@ -119,7 +119,7 @@ class ContinuousDistribution(UnivariateDistribution):
 
     def log_truncated(
         self, event: Event, singleton_allowed: bool = False
-    ) -> Tuple[Optional[Self], float]:
+    ) -> Tuple[Optional[ContinuousDistribution], float]:
         if event.is_empty():
             return None, -np.inf
 
@@ -534,6 +534,11 @@ class IntegerDistribution(ContinuousDistribution, DiscreteDistribution):
 
     def probabilities_for_plotting(self) -> Dict[Union[int, str], float]:
         return {x: p_x for x, p_x in self.probabilities.items() if p_x > 0}
+
+    def log_conditional_from_simple_interval_if_not_singleton(
+        self, interval: SimpleInterval
+    ) -> Tuple[Optional[ContinuousDistribution], float]:
+        raise UndefinedOperationError(self)
 
     @property
     def univariate_support(self) -> Interval:

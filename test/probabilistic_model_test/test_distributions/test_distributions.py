@@ -255,9 +255,9 @@ class DiracDeltaDistributionTestCase(unittest.TestCase):
 
         # singleton at the location
         event = SimpleEvent.from_data({x: singleton(1.0)}).as_composite_set()
-        conditional, probability = dist.truncated(event, singleton_allowed=True)
+        conditional, probability = dist.truncated(event)
         self.assertEqual(conditional, dist)
-        self.assertAlmostEqual(probability, 2.0)
+        self.assertAlmostEqual(probability, 1.0)
 
         # singleton elsewhere
         event_away = SimpleEvent.from_data({x: singleton(0.0)}).as_composite_set()
