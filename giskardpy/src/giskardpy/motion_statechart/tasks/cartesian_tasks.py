@@ -226,9 +226,6 @@ class CartesianPositionTrajectory(CartesianTask):
     )
     """Reference velocity for normalization in m/s."""
 
-    goal_reference_frame_P_current_target_point: Point3 = field(init=False, repr=False)
-    """Symbolic expression representing the current target point in the goal reference frame."""
-
     remaining_distance: FloatVariable = field(init=False, repr=False)
     """Distance left to travel along the trajectory, rewritten every control cycle."""
 
@@ -252,6 +249,21 @@ class CartesianPositionTrajectory(CartesianTask):
                 )
         return reference_frame
 
+    @cached_property
+    def goal_reference_frame_P_current_target_point(self) -> Point3:
+        """
+        Per-tick target point on the trajectory, riding ``look_ahead_distance`` ahead of the
+        tip along the path, expressed in the goal reference frame.
+
+        It is created lazily so a velocity limit can reference it before the trajectory is
+        built. Its value is registered and updated during execution.
+        """
+        target_point = Point3.create_with_variables(
+            "goal_reference_frame_P_current_target_point"
+        )
+        target_point.reference_frame = self.goal_reference_frame
+        return target_point
+
     def _goal_points_to_np(self):
         self._goal_points_np = np.array(
             [point.to_np()[:-1] for point in self.goal_points]
@@ -271,7 +283,7 @@ class CartesianPositionTrajectory(CartesianTask):
             trajectory the tip already is.
         """
         artifacts = NodeArtifacts()
-        self._init_goal_reference_frame_P_current_target_point(
+        self._register_goal_reference_frame_P_current_target_point(
             context.float_variable_data
         )
         self._init_remaining_distance(context.float_variable_data)
@@ -358,12 +370,25 @@ class CartesianPositionTrajectory(CartesianTask):
             ),
             sparse=False,
         )
+        self._bind_compiled_point_to_memory(context)
+
+    def _bind_compiled_point_to_memory(self, context: MotionStatechartContext):
+        """
+        Point the compiled tip expression at the live state buffers.
+
+        Registering float variables reallocates the data array, so this is repeated in
+        :meth:`on_start` once every node has been built and the array is final.
+        """
         self._compiled_goal_reference_frame_P_tip.bind_args_to_memory_view(
             0, context.world.state.positions
         )
         self._compiled_goal_reference_frame_P_tip.bind_args_to_memory_view(
             1, context.float_variable_data.data
         )
+
+    def on_start(self, context: MotionStatechartContext):
+        super().on_start(context)
+        self._bind_compiled_point_to_memory(context)
 
     def _update_trajectory_index(self, goal_reference_frame_P_tip_np: np.ndarray):
         """
@@ -440,19 +465,13 @@ class CartesianPositionTrajectory(CartesianTask):
         )
         return None
 
-    def _init_goal_reference_frame_P_current_target_point(
+    def _register_goal_reference_frame_P_current_target_point(
         self, float_variable_data: FloatVariableData
     ):
         """
-        Initialize the symbolic expression representing the current target point in the goal reference frame.
+        Register the current target point with the data store and seed its value.
         :param float_variable_data: The FloatVariableData instance to register the expression with.
         """
-        self.goal_reference_frame_P_current_target_point = Point3.create_with_variables(
-            "goal_reference_frame_P_current_target_point"
-        )
-        self.goal_reference_frame_P_current_target_point.reference_frame = (
-            self.goal_reference_frame
-        )
         float_variable_data.register_expression(
             self.goal_reference_frame_P_current_target_point
         )
