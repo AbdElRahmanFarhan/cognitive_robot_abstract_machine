@@ -1571,6 +1571,92 @@ class TestVelocityLimitBoundsAbsoluteSpeed:
             MinimalRobot.from_world(world)
         return world, root, tip
 
+    def _build_radial_prismatic_world(
+        self, start_distance: float, max_dof_velocity: float
+    ) -> tuple[World, KinematicStructureEntity, KinematicStructureEntity]:
+        """
+        World whose tip slides along z starting ``start_distance`` from the root origin
+        along the same z axis, so its motion is purely radial and the root-referenced
+        fallback coincides with the true speed.
+        """
+        world = World()
+        with world.modify_world():
+            root = Body(name=PrefixedName("map"))
+            tip = Body(name=PrefixedName("tip"))
+            dof = DegreeOfFreedom(
+                name=PrefixedName("slide_z"),
+                limits=_single_dof_limits(max_dof_velocity),
+                has_hardware_interface=True,
+            )
+            world.add_degree_of_freedom(dof)
+            world.add_connection(
+                PrismaticConnection(
+                    parent=root,
+                    child=tip,
+                    raw_dof=dof,
+                    axis=Vector3.Z(),
+                    parent_T_connection_expression=HomogeneousTransformationMatrix.from_xyz_rpy(
+                        z=start_distance
+                    ),
+                )
+            )
+            MinimalRobot.from_world(world)
+        return world, root, tip
+
+    def _build_offset_slide_and_turn_world(
+        self,
+        offset_x: float,
+        offset_roll: float,
+        max_linear_dof_velocity: float,
+        max_angular_dof_velocity: float,
+    ) -> tuple[World, KinematicStructureEntity, KinematicStructureEntity]:
+        """
+        World whose tip both slides along z (offset from the root origin along x) and
+        turns about z (its orientation offset a fixed roll from the root), so translation
+        is across the root direction and rotation is off the current-to-root axis.
+        """
+        world = World()
+        with world.modify_world():
+            root = Body(name=PrefixedName("map"))
+            carriage = Body(name=PrefixedName("carriage"))
+            tip = Body(name=PrefixedName("tip"))
+            slide = DegreeOfFreedom(
+                name=PrefixedName("slide_z"),
+                limits=_single_dof_limits(max_linear_dof_velocity),
+                has_hardware_interface=True,
+            )
+            world.add_degree_of_freedom(slide)
+            world.add_connection(
+                PrismaticConnection(
+                    parent=root,
+                    child=carriage,
+                    raw_dof=slide,
+                    axis=Vector3.Z(),
+                    parent_T_connection_expression=HomogeneousTransformationMatrix.from_xyz_rpy(
+                        x=offset_x
+                    ),
+                )
+            )
+            turn = DegreeOfFreedom(
+                name=PrefixedName("turn_z"),
+                limits=_single_dof_limits(max_angular_dof_velocity),
+                has_hardware_interface=True,
+            )
+            world.add_degree_of_freedom(turn)
+            world.add_connection(
+                RevoluteConnection(
+                    parent=carriage,
+                    child=tip,
+                    raw_dof=turn,
+                    axis=Vector3.Z(),
+                    parent_T_connection_expression=HomogeneousTransformationMatrix.from_xyz_rpy(
+                        roll=offset_roll
+                    ),
+                )
+            )
+            MinimalRobot.from_world(world)
+        return world, root, tip
+
     def _run(self, world: World, goal_node, limit_node) -> WorldStateTrajectory:
         """
         Compile and run ``goal_node`` under ``limit_node`` until the goal is reached and
@@ -1721,3 +1807,108 @@ class TestVelocityLimitBoundsAbsoluteSpeed:
 
         speeds = self._angular_speeds(trajectory, root, tip)
         assert speeds.max() <= max_angular_velocity * 1.02
+
+    def test_angular_limit_holds_through_arrival(self):
+        """
+        The angle to the goal reaches zero at arrival, where the constraint's zero guard
+        drops it.
+
+        The final ticks must still respect the angular velocity limit.
+        """
+        offset_roll = 1.0
+        goal_angle = 0.5
+        max_angular_velocity = 0.2
+        world, root, tip = self._build_offset_revolute_world(
+            offset_roll=offset_roll, max_dof_velocity=3.0
+        )
+        goal_orientation = RotationMatrix.from_axis_angle(
+            Vector3.Z(), goal_angle, reference_frame=tip
+        )
+        goal = CartesianOrientation(
+            root_link=root, tip_link=tip, goal_orientation=goal_orientation
+        )
+        limit = CartesianRotationVelocityLimit(
+            root_link=root,
+            tip_link=tip,
+            goal_orientation=goal_orientation,
+            max_angular_velocity=max_angular_velocity,
+        )
+
+        trajectory = self._run(world, goal, limit)
+
+        poses = self._tip_poses(trajectory, root, tip)
+        net_rotation = poses[0][:3, :3].T @ poses[-1][:3, :3]
+        net_angle = np.arccos(np.clip((np.trace(net_rotation) - 1) / 2, -1.0, 1.0))
+        assert np.isclose(net_angle, goal_angle, atol=0.02)
+        final_speeds = self._angular_speeds(trajectory, root, tip)[-5:]
+        assert final_speeds.max() <= max_angular_velocity * 1.02
+
+    def test_combined_limit_bounds_both_linear_and_angular_speed(self):
+        """
+        ``CartesianVelocityLimit`` forwards both goals so that the linear and angular
+        speeds are simultaneously bounded while the tip slides across the root direction
+        and turns off the current-to-root axis.
+        """
+        offset_x = 10.0
+        offset_roll = 1.0
+        max_linear_velocity = 0.05
+        max_angular_velocity = 0.2
+        world, root, tip = self._build_offset_slide_and_turn_world(
+            offset_x=offset_x,
+            offset_roll=offset_roll,
+            max_linear_dof_velocity=1.0,
+            max_angular_dof_velocity=3.0,
+        )
+        goal_point = Point3(offset_x, 0, 1.0, reference_frame=root)
+        goal_orientation = RotationMatrix.from_axis_angle(
+            Vector3.Z(), 0.5, reference_frame=tip
+        )
+        driver = Parallel(
+            [
+                CartesianPosition(root_link=root, tip_link=tip, goal_point=goal_point),
+                CartesianOrientation(
+                    root_link=root, tip_link=tip, goal_orientation=goal_orientation
+                ),
+            ]
+        )
+        limit = CartesianVelocityLimit(
+            root_link=root,
+            tip_link=tip,
+            goal_point=goal_point,
+            goal_orientation=goal_orientation,
+            max_linear_velocity=max_linear_velocity,
+            max_angular_velocity=max_angular_velocity,
+        )
+
+        trajectory = self._run(world, driver, limit)
+
+        assert (
+            self._linear_speeds(trajectory, root, tip).max()
+            <= max_linear_velocity * 1.02
+        )
+        assert (
+            self._angular_speeds(trajectory, root, tip).max()
+            <= max_angular_velocity * 1.02
+        )
+
+    def test_linear_limit_without_goal_bounds_radial_speed(self):
+        """
+        Without a goal the limit falls back to the radial speed away from the root origin,
+        which is the true speed when the tip moves along the root direction. That fallback
+        must keep bounding the speed there.
+        """
+        start_distance = 1.0
+        max_linear_velocity = 0.05
+        world, root, tip = self._build_radial_prismatic_world(
+            start_distance=start_distance, max_dof_velocity=1.0
+        )
+        goal_point = Point3(0, 0, start_distance + 1.0, reference_frame=root)
+        goal = CartesianPosition(root_link=root, tip_link=tip, goal_point=goal_point)
+        limit = CartesianPositionVelocityLimit(
+            root_link=root, tip_link=tip, max_linear_velocity=max_linear_velocity
+        )
+
+        trajectory = self._run(world, goal, limit)
+
+        speeds = self._linear_speeds(trajectory, root, tip)
+        assert speeds.max() <= max_linear_velocity * 1.02
