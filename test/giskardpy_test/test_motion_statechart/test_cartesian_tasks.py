@@ -1603,6 +1603,43 @@ class TestVelocityLimitBoundsAbsoluteSpeed:
             MinimalRobot.from_world(world)
         return world, root, tip
 
+    def _build_planar_prismatic_world(
+        self, max_dof_velocity: float
+    ) -> tuple[World, KinematicStructureEntity, KinematicStructureEntity]:
+        """
+        World whose tip translates freely in the x-y plane through two prismatic joints,
+        so it can follow an arbitrary planar path.
+        """
+        world = World()
+        with world.modify_world():
+            root = Body(name=PrefixedName("map"))
+            carriage = Body(name=PrefixedName("carriage"))
+            tip = Body(name=PrefixedName("tip"))
+            slide_x = DegreeOfFreedom(
+                name=PrefixedName("slide_x"),
+                limits=_single_dof_limits(max_dof_velocity),
+                has_hardware_interface=True,
+            )
+            world.add_degree_of_freedom(slide_x)
+            world.add_connection(
+                PrismaticConnection(
+                    parent=root, child=carriage, raw_dof=slide_x, axis=Vector3.X()
+                )
+            )
+            slide_y = DegreeOfFreedom(
+                name=PrefixedName("slide_y"),
+                limits=_single_dof_limits(max_dof_velocity),
+                has_hardware_interface=True,
+            )
+            world.add_degree_of_freedom(slide_y)
+            world.add_connection(
+                PrismaticConnection(
+                    parent=carriage, child=tip, raw_dof=slide_y, axis=Vector3.Y()
+                )
+            )
+            MinimalRobot.from_world(world)
+        return world, root, tip
+
     def _build_offset_slide_and_turn_world(
         self,
         offset_x: float,
@@ -1890,6 +1927,47 @@ class TestVelocityLimitBoundsAbsoluteSpeed:
             self._angular_speeds(trajectory, root, tip).max()
             <= max_angular_velocity * 1.02
         )
+
+    def test_linear_limit_bounds_speed_along_curved_trajectory(self):
+        """
+        Driving the limit with the trajectory's per-tick look-ahead target keeps the tip
+        speed bounded while following a curved path, without stalling.
+
+        The look-ahead target rides ahead on the path, so the reference stays the path
+        tangent and never coincides with the tip, keeping the constraint active through the
+        whole move including arrival.
+        """
+        max_linear_velocity = 0.05
+        world, root, tip = self._build_planar_prismatic_world(max_dof_velocity=1.0)
+        quarter_circle = [
+            Point3(
+                np.cos(-np.pi / 2 + (np.pi / 2) * step / 2999),
+                1 + np.sin(-np.pi / 2 + (np.pi / 2) * step / 2999),
+                0,
+                reference_frame=root,
+            )
+            for step in range(3000)
+        ]
+        trajectory_goal = CartesianPositionTrajectory(
+            root_link=root,
+            tip_link=tip,
+            goal_points=quarter_circle,
+            maximum_skip_ahead=100,
+            look_ahead_distance=0.05,
+        )
+        limit = CartesianPositionVelocityLimit(
+            root_link=root,
+            tip_link=tip,
+            goal_point=trajectory_goal.goal_reference_frame_P_current_target_point,
+            max_linear_velocity=max_linear_velocity,
+        )
+
+        trajectory = self._run(world, trajectory_goal, limit)
+
+        final_position = self._tip_poses(trajectory, root, tip)[-1][:3, 3]
+        assert np.allclose(final_position, quarter_circle[-1].to_np()[:3], atol=0.01)
+        speeds = self._linear_speeds(trajectory, root, tip)
+        assert speeds.max() <= max_linear_velocity * 1.02
 
     def test_linear_limit_without_goal_bounds_radial_speed(self):
         """
