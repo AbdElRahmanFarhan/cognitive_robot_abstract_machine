@@ -1508,6 +1508,13 @@ class TestVelocityLimitBoundsAbsoluteSpeed:
     Control frequency of the executor, used to turn per-tick motion into a speed.
     """
 
+    speed_tolerance: float = 0.02
+    """
+    Fractional slack allowed above the limit when comparing the achieved speed. The speed
+    is reconstructed from finite differences of recorded states, so the discrete estimate
+    can sit slightly above the continuously enforced bound.
+    """
+
     def _build_offset_prismatic_world(
         self, offset_x: float, max_dof_velocity: float
     ) -> tuple[World, KinematicStructureEntity, KinematicStructureEntity]:
@@ -1787,7 +1794,7 @@ class TestVelocityLimitBoundsAbsoluteSpeed:
         trajectory = self._run(world, goal, limit)
 
         speeds = self._linear_speeds(trajectory, root, tip)
-        assert speeds.max() <= max_linear_velocity * 1.02
+        assert speeds.max() <= max_linear_velocity * (1 + self.speed_tolerance)
 
     def test_linear_limit_holds_through_arrival(self):
         """
@@ -1815,7 +1822,7 @@ class TestVelocityLimitBoundsAbsoluteSpeed:
         final_pose = self._tip_poses(trajectory, root, tip)[-1]
         assert np.allclose(final_pose[:3, 3], goal_point.to_np()[:3], atol=0.01)
         final_speeds = self._linear_speeds(trajectory, root, tip)[-5:]
-        assert final_speeds.max() <= max_linear_velocity * 1.02
+        assert final_speeds.max() <= max_linear_velocity * (1 + self.speed_tolerance)
 
     def test_angular_limit_bounds_speed_toward_goal(self):
         """
@@ -1843,7 +1850,7 @@ class TestVelocityLimitBoundsAbsoluteSpeed:
         trajectory = self._run(world, goal, limit)
 
         speeds = self._angular_speeds(trajectory, root, tip)
-        assert speeds.max() <= max_angular_velocity * 1.02
+        assert speeds.max() <= max_angular_velocity * (1 + self.speed_tolerance)
 
     def test_angular_limit_holds_through_arrival(self):
         """
@@ -1878,7 +1885,7 @@ class TestVelocityLimitBoundsAbsoluteSpeed:
         net_angle = np.arccos(np.clip((np.trace(net_rotation) - 1) / 2, -1.0, 1.0))
         assert np.isclose(net_angle, goal_angle, atol=0.02)
         final_speeds = self._angular_speeds(trajectory, root, tip)[-5:]
-        assert final_speeds.max() <= max_angular_velocity * 1.02
+        assert final_speeds.max() <= max_angular_velocity * (1 + self.speed_tolerance)
 
     def test_combined_limit_bounds_both_linear_and_angular_speed(self):
         """
@@ -1919,14 +1926,12 @@ class TestVelocityLimitBoundsAbsoluteSpeed:
 
         trajectory = self._run(world, driver, limit)
 
-        assert (
-            self._linear_speeds(trajectory, root, tip).max()
-            <= max_linear_velocity * 1.02
-        )
-        assert (
-            self._angular_speeds(trajectory, root, tip).max()
-            <= max_angular_velocity * 1.02
-        )
+        assert self._linear_speeds(
+            trajectory, root, tip
+        ).max() <= max_linear_velocity * (1 + self.speed_tolerance)
+        assert self._angular_speeds(
+            trajectory, root, tip
+        ).max() <= max_angular_velocity * (1 + self.speed_tolerance)
 
     def test_linear_limit_bounds_speed_along_curved_trajectory(self):
         """
@@ -1967,7 +1972,7 @@ class TestVelocityLimitBoundsAbsoluteSpeed:
         final_position = self._tip_poses(trajectory, root, tip)[-1][:3, 3]
         assert np.allclose(final_position, quarter_circle[-1].to_np()[:3], atol=0.01)
         speeds = self._linear_speeds(trajectory, root, tip)
-        assert speeds.max() <= max_linear_velocity * 1.02
+        assert speeds.max() <= max_linear_velocity * (1 + self.speed_tolerance)
 
     def test_linear_limit_without_goal_bounds_radial_speed(self):
         """
@@ -1989,4 +1994,4 @@ class TestVelocityLimitBoundsAbsoluteSpeed:
         trajectory = self._run(world, goal, limit)
 
         speeds = self._linear_speeds(trajectory, root, tip)
-        assert speeds.max() <= max_linear_velocity * 1.02
+        assert speeds.max() <= max_linear_velocity * (1 + self.speed_tolerance)
